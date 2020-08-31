@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/Gurulakshmi-Varadharaj/tinyapp/issues"
   },
-  "homepage": "https://github.com/Gurulakshmi-Varadharaj/tinyapp#readme"
+  "homepage": "https://github.com/Gurulakshmi-Varadharaj/tinyapp#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
 }
