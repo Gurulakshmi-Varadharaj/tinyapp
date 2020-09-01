@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
 
-const generateRandomString = function() {
+const generateRandomString = function () {
   let result = '';
   const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
   for (let i = 6; i > 0; --i) {
@@ -63,14 +63,24 @@ app.post("/urls", (req, res) => {
 
 //Redirect using shortURL to longURL page using /u/:shortURL
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
-  res.redirect(longURL);
+  if (urlDatabase[req.params.shortURL]) {
+    const longURL = urlDatabase[req.params.shortURL];
+    res.redirect(longURL);
+  } else {
+    res.statusCode = 404;
+    res.send('404: Page not found');
+  }
 });
 
 //Using Template Engine to pass data from frontend to backend and vice versa
 app.get('/urls/:shortURL', (req, res) => {
-  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
-  res.render('urls_show', templateVars);
+  if (urlDatabase[req.params.shortURL]) {
+    let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+    res.render('urls_show', templateVars);
+  } else {
+    res.statusCode = 404;
+    res.send('404: Page not found');
+  }
 });
 
 //Server Connection to port
