@@ -2,10 +2,10 @@ const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
 
-function generateRandomString() {
+const generateRandomString = function () {
   let result = '';
   const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  for (let i = length; i > 0; --i) {
+  for (let i = 6; i > 0; --i) {
     result += chars[Math.floor(Math.random() * chars.length)];
   }
   return result;
@@ -15,14 +15,16 @@ function generateRandomString() {
 app.set('view engine', 'ejs');
 
 //Local Database - later use real DB
-const urlDatabase = {
+let urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
 
 //Middleware - Body Parser - to make Buffer data in request readable
 const bodyParser = require("body-parser");
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({ extended: false }));
+
+app.use(bodyParser.json());
 
 //Root or Home page
 app.get('/', (req, res) => {
@@ -50,9 +52,13 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
 
+//After submit, the POST method is called to save the newURL to urlDatabase
 app.post("/urls", (req, res) => {
-  console.log(req.body);  // Log the POST request body to the console
-  res.send("Ok");         // Respond with 'Ok' (we will replace this)
+  const longURL = req.body.longURL;
+  const shortURL = generateRandomString();
+  urlDatabase[shortURL] = longURL;
+  const redirectTO = `/urls/${shortURL}`;
+  res.redirect(redirectTO);         // Respond with redirection to /urls/:shortURL 
 });
 
 //Using Template Engine to pass data from frontend to backend and vice versa
