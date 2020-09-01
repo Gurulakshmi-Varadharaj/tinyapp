@@ -2,14 +2,14 @@ const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
 
-const generateRandomString = function () {
+const generateRandomString = function() {
   let result = '';
   const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
   for (let i = 6; i > 0; --i) {
     result += chars[Math.floor(Math.random() * chars.length)];
   }
   return result;
-}
+};
 
 //Express will use EJS Template
 app.set('view engine', 'ejs');
@@ -57,8 +57,14 @@ app.post("/urls", (req, res) => {
   const longURL = req.body.longURL;
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = longURL;
-  const redirectTO = `/urls/${shortURL}`;
-  res.redirect(redirectTO);         // Respond with redirection to /urls/:shortURL 
+  const redirectTO = `/u/${shortURL}`;
+  res.redirect(redirectTO);         // Respond with redirection to /urls/:shortURL
+});
+
+//Redirect using shortURL to longURL page using /u/:shortURL
+app.get("/u/:shortURL", (req, res) => {
+  const longURL = urlDatabase[req.params.shortURL];
+  res.redirect(longURL);
 });
 
 //Using Template Engine to pass data from frontend to backend and vice versa
@@ -70,4 +76,4 @@ app.get('/urls/:shortURL', (req, res) => {
 //Server Connection to port
 app.listen(PORT, () => {
   console.log(`Example app listening to port ${PORT}`);
-})
+});
