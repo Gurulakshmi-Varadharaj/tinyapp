@@ -122,6 +122,11 @@ app.post('/logout', (req, res) => {
   res.redirect('/urls');
 });
 
+//User Registration page
+app.get('/register', (req, res) => {
+  res.render('user_register');
+});
+
 //Server Connection to port
 app.listen(PORT, () => {
   console.log(`Example app listening to port ${PORT}`);
