@@ -83,6 +83,12 @@ app.get('/urls/:shortURL', (req, res) => {
   }
 });
 
+//Using POST instead of DELETE method to delete a data from urlDatabase 
+app.post('/urls/:shortURL/delete', (req, res) => {
+  delete urlDatabase[req.params.shortURL];
+  res.redirect('/urls');
+});
+
 //Server Connection to port
 app.listen(PORT, () => {
   console.log(`Example app listening to port ${PORT}`);
