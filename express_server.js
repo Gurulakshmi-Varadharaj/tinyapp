@@ -2,7 +2,8 @@ const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
 
-const generateRandomString = function () {
+//Helper Function to generate random alphanumeric string
+const generateRandomString = function() {
   let result = '';
   const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
   for (let i = 6; i > 0; --i) {
@@ -83,10 +84,24 @@ app.get('/urls/:shortURL', (req, res) => {
   }
 });
 
-//Using POST instead of DELETE method to delete a data from urlDatabase 
+//Using POST instead of DELETE method to delete a data from urlDatabase
 app.post('/urls/:shortURL/delete', (req, res) => {
   delete urlDatabase[req.params.shortURL];
   res.redirect('/urls');
+});
+
+//Using POST instead of PUT method to redirect from index page to show page
+app.post('/urls/:shortURL/edit', (req, res) => {
+  let redirectTo = `/urls/${req.params.shortURL}`;
+  res.redirect(redirectTo);
+});
+
+//Using POST instead of PUT method to update the longURL
+app.post('/urls/:shortURL', (req, res) => {
+  const longURL = req.body.longURL;
+  urlDatabase[req.params.shortURL] = longURL;
+  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  res.render('urls_show', templateVars);
 });
 
 //Server Connection to port
