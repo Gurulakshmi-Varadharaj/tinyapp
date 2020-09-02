@@ -1,9 +1,19 @@
+//Using Express module to communicate between server and client browser(port)
 const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
 
+//Middleware - Body Parser - to make Buffer data in request readable
+const bodyParser = require("body-parser");
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
+//Middleware - Cookie parser
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
+
 //Helper Function to generate random alphanumeric string
-const generateRandomString = function() {
+const generateRandomString = function () {
   let result = '';
   const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
   for (let i = 6; i > 0; --i) {
@@ -12,7 +22,7 @@ const generateRandomString = function() {
   return result;
 };
 
-//Express will use EJS Template
+//Express will use EJS Template Engine
 app.set('view engine', 'ejs');
 
 //Local Database - later use real DB
@@ -21,14 +31,8 @@ let urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
-//Middleware - Body Parser - to make Buffer data in request readable
-const bodyParser = require("body-parser");
-app.use(bodyParser.urlencoded({ extended: false }));
-
-app.use(bodyParser.json());
-
 //Root or Home page
-app.get('/', (req, res) => {
+/***app.get('/', (req, res) => {
   res.send('Hello!');
 });
 
@@ -40,17 +44,18 @@ app.get('/urls.json', (req, res) => {
 //Add HTML as rsponse
 app.get('/hello', (req, res) => {
   res.send('<html><body>Hello <b>World</b></body></html>\n');
-});
+});****/
 
 //Using Template Engine to pass data from backend to frontend
 app.get('/urls', (req, res) => {
-  let templateVars = { urls: urlDatabase };
+  let templateVars = { username: req.cookies["username"], urls: urlDatabase };
   res.render('urls_index', templateVars);
 });
 
 //To show the form in browser
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  let templateVars = { username: req.cookies["username"] };
+  res.render("urls_new", templateVars);
 });
 
 //After submit, the POST method is called to save the newURL to urlDatabase
@@ -76,7 +81,7 @@ app.get("/u/:shortURL", (req, res) => {
 //Using Template Engine to pass data from frontend to backend and vice versa
 app.get('/urls/:shortURL', (req, res) => {
   if (urlDatabase[req.params.shortURL]) {
-    let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+    let templateVars = { username: req.cookies["username"], shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
     res.render('urls_show', templateVars);
   } else {
     res.statusCode = 404;
@@ -102,6 +107,19 @@ app.post('/urls/:shortURL', (req, res) => {
   urlDatabase[req.params.shortURL] = longURL;
   let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   res.render('urls_show', templateVars);
+});
+
+//Setting cookies with user login form from _header.ejs
+app.post('/login', (req, res) => {
+  const userName = req.body.username;
+  res.cookie('username', userName);
+  res.redirect('/urls');
+});
+
+//Clearing cookies with user logout form from _header.ejs
+app.post('/logout', (req, res) => {
+  res.clearCookie('username');
+  res.redirect('/urls');
 });
 
 //Server Connection to port
