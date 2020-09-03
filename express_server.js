@@ -13,7 +13,7 @@ const cookieParser = require('cookie-parser');
 app.use(cookieParser());
 
 //Helper Function to generate random alphanumeric string
-const generateRandomString = function () {
+const generateRandomString = function() {
   let result = '';
   const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
   for (let i = 6; i > 0; --i) {
@@ -26,35 +26,38 @@ const generateRandomString = function () {
 app.set('view engine', 'ejs');
 
 //Local Database - later use real DB
+let users = {
+  "userRandomID": {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur"
+  },
+  "user2RandomID": {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk"
+  }
+};
+
 let urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
 
-//Root or Home page
-/***app.get('/', (req, res) => {
-  res.send('Hello!');
-});
-
-//Get the URL list as String which is defined as Object
-app.get('/urls.json', (req, res) => {
-  res.json(urlDatabase);
-});
-
-//Add HTML as rsponse
-app.get('/hello', (req, res) => {
-  res.send('<html><body>Hello <b>World</b></body></html>\n');
-});****/
-
+//Route for client-server interaction
 //Using Template Engine to pass data from backend to frontend
+
+//Root or Home page
 app.get('/urls', (req, res) => {
-  let templateVars = { username: req.cookies["username"], urls: urlDatabase };
+  const userIdCookie = req.cookies['user_id'];
+  let templateVars = { user: users[userIdCookie], urls: urlDatabase };
   res.render('urls_index', templateVars);
 });
 
 //To show the form in browser
 app.get("/urls/new", (req, res) => {
-  let templateVars = { username: req.cookies["username"] };
+  const userIdCookie = req.cookies['user_id'];
+  let templateVars = { user: users[userIdCookie] };
   res.render("urls_new", templateVars);
 });
 
@@ -81,7 +84,8 @@ app.get("/u/:shortURL", (req, res) => {
 //Using Template Engine to pass data from frontend to backend and vice versa
 app.get('/urls/:shortURL', (req, res) => {
   if (urlDatabase[req.params.shortURL]) {
-    let templateVars = { username: req.cookies["username"], shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+    const userIdCookie = req.cookies['user_id'];
+    let templateVars = { user: users[userIdCookie], shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
     res.render('urls_show', templateVars);
   } else {
     res.statusCode = 404;
@@ -104,8 +108,9 @@ app.post('/urls/:shortURL/edit', (req, res) => {
 //Using POST instead of PUT method to update the longURL
 app.post('/urls/:shortURL', (req, res) => {
   const longURL = req.body.longURL;
+  const userIdCookie = req.cookies['user_id'];
   urlDatabase[req.params.shortURL] = longURL;
-  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  let templateVars = { user: users[userIdCookie], shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   res.render('urls_show', templateVars);
 });
 
@@ -118,13 +123,22 @@ app.post('/login', (req, res) => {
 
 //Clearing cookies with user logout form from _header.ejs
 app.post('/logout', (req, res) => {
-  res.clearCookie('username');
+  res.clearCookie('user_id');
   res.redirect('/urls');
 });
 
 //User Registration page
 app.get('/register', (req, res) => {
   res.render('user_register');
+});
+
+//POST endpoint for Registration page to store the user details in users object
+app.post('/register', (req, res) => {
+  const { email, password } = req.body;
+  const id = generateRandomString();
+  users[id] = { id, email, password };
+  res.cookie('user_id', id);
+  res.redirect('/urls');
 });
 
 //Server Connection to port
