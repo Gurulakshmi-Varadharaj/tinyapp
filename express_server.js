@@ -12,19 +12,6 @@ app.use(bodyParser.json());
 const cookieParser = require('cookie-parser');
 app.use(cookieParser());
 
-//Helper Function to generate random alphanumeric string
-const generateRandomString = function() {
-  let result = '';
-  const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  for (let i = 6; i > 0; --i) {
-    result += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return result;
-};
-
-//Express will use EJS Template Engine
-app.set('view engine', 'ejs');
-
 //Local Database - later use real DB
 let users = {
   "userRandomID": {
@@ -44,6 +31,29 @@ let urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+//Helper Function to generate random alphanumeric string
+const generateRandomString = () => {
+  let result = '';
+  const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  for (let i = 6; i > 0; --i) {
+    result += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return result;
+};
+
+//Helper function to check email already exists in users DB
+const emailLookup = (emailInput) => {
+  for (let key in users) {
+    if (emailInput === users[key]['email']) {
+      return false;
+    }
+  }
+  return true;
+};
+
+//Express will use EJS Template Engine
+app.set('view engine', 'ejs');
+
 //Route for client-server interaction
 //Using Template Engine to pass data from backend to frontend
 
@@ -51,14 +61,14 @@ let urlDatabase = {
 app.get('/urls', (req, res) => {
   const userIdCookie = req.cookies['user_id'];
   let templateVars = { user: users[userIdCookie], urls: urlDatabase };
-  res.render('urls_index', templateVars);
+  return res.render('urls_index', templateVars);
 });
 
 //To show the form in browser
 app.get("/urls/new", (req, res) => {
   const userIdCookie = req.cookies['user_id'];
   let templateVars = { user: users[userIdCookie] };
-  res.render("urls_new", templateVars);
+  return res.render("urls_new", templateVars);
 });
 
 //After submit, the POST method is called to save the newURL to urlDatabase
@@ -67,17 +77,17 @@ app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = longURL;
   const redirectTO = `/u/${shortURL}`;
-  res.redirect(redirectTO);         // Respond with redirection to /urls/:shortURL
+  return res.redirect(redirectTO);         // Respond with redirection to /urls/:shortURL
 });
 
 //Redirect using shortURL to longURL page using /u/:shortURL
 app.get("/u/:shortURL", (req, res) => {
   if (urlDatabase[req.params.shortURL]) {
     const longURL = urlDatabase[req.params.shortURL];
-    res.redirect(longURL);
+    return res.redirect(longURL);
   } else {
     res.statusCode = 404;
-    res.send('404: Page not found');
+    return res.send('404: Page not found');
   }
 });
 
@@ -86,23 +96,23 @@ app.get('/urls/:shortURL', (req, res) => {
   if (urlDatabase[req.params.shortURL]) {
     const userIdCookie = req.cookies['user_id'];
     let templateVars = { user: users[userIdCookie], shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
-    res.render('urls_show', templateVars);
+    return res.render('urls_show', templateVars);
   } else {
     res.statusCode = 404;
-    res.send('404: Page not found');
+    return res.send('404: Page not found');
   }
 });
 
 //Using POST instead of DELETE method to delete a data from urlDatabase
 app.post('/urls/:shortURL/delete', (req, res) => {
   delete urlDatabase[req.params.shortURL];
-  res.redirect('/urls');
+  return res.redirect('/urls');
 });
 
 //Using POST instead of PUT method to redirect from index page to show page
 app.post('/urls/:shortURL/edit', (req, res) => {
   let redirectTo = `/urls/${req.params.shortURL}`;
-  res.redirect(redirectTo);
+  return res.redirect(redirectTo);
 });
 
 //Using POST instead of PUT method to update the longURL
@@ -111,34 +121,45 @@ app.post('/urls/:shortURL', (req, res) => {
   const userIdCookie = req.cookies['user_id'];
   urlDatabase[req.params.shortURL] = longURL;
   let templateVars = { user: users[userIdCookie], shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
-  res.render('urls_show', templateVars);
+  return res.render('urls_show', templateVars);
 });
 
 //Setting cookies with user login form from _header.ejs
 app.post('/login', (req, res) => {
   const userName = req.body.username;
   res.cookie('username', userName);
-  res.redirect('/urls');
+  return res.redirect('/urls');
 });
 
 //Clearing cookies with user logout form from _header.ejs
 app.post('/logout', (req, res) => {
   res.clearCookie('user_id');
-  res.redirect('/urls');
+  return res.redirect('/urls');
 });
 
 //User Registration page
 app.get('/register', (req, res) => {
-  res.render('user_register');
+  return res.render('user_register');
 });
 
 //POST endpoint for Registration page to store the user details in users object
 app.post('/register', (req, res) => {
   const { email, password } = req.body;
+  //Handling Registration Errors
+  if (email === '' || password === '') {
+    res.statusCode = 400;
+    return res.send(`${res.statusCode}: Bad Request`);
+  } else {
+    const valdiateEamil = emailLookup(email);
+    if (!valdiateEamil) {
+      res.statusCode = 400;
+      return res.send(`${res.statusCode}: Bad Request`);
+    }
+  }
   const id = generateRandomString();
   users[id] = { id, email, password };
   res.cookie('user_id', id);
-  res.redirect('/urls');
+  return res.redirect('/urls');
 });
 
 //Server Connection to port
