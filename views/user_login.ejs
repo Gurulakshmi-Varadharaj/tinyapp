@@ -16,9 +16,15 @@
   <main style="margin: 1em;">
     <h3>Login</h3>
     <form action='/login' method='POST'>
-      <input type='email' name='email' placeholder='EmailId'>
-      <input type='password' name='password' placeholder='Password'>
-      <button type='submit'>Login</button>
+      <label for="email">Email address</label>
+      <div>
+        <input type='email' name='email' placeholder='EmailId'>
+      </div>
+      <label for="password">Password</label>
+      <div>
+        <input type='password' name='password' placeholder='Password'>
+      </div>
+      <button type='submit' class="btn btn-primary">Login</button>
     </form>
   </main>
 

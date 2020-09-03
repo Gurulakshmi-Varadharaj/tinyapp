@@ -74,10 +74,15 @@ app.get("/urls/new", (req, res) => {
 //After submit, the POST method is called to save the newURL to urlDatabase
 app.post("/urls", (req, res) => {
   const longURL = req.body.longURL;
-  const shortURL = generateRandomString();
-  urlDatabase[shortURL] = longURL;
-  const redirectTO = `/u/${shortURL}`;
-  return res.redirect(redirectTO);         // Respond with redirection to /urls/:shortURL
+  if (longURL !== '') {
+    const shortURL = generateRandomString();
+    urlDatabase[shortURL] = longURL;
+    const redirectTO = `/u/${shortURL}`;
+    return res.redirect(redirectTO);         // Respond with redirection to /urls/:shortURL
+  } else {
+    res.statusCode = 404;
+    return res.send('404: Page not found');
+  }
 });
 
 //Redirect using shortURL to longURL page using /u/:shortURL
@@ -140,12 +145,12 @@ app.post('/register', (req, res) => {
   //Handling Registration Errors
   if (email === '' || password === '') {
     res.statusCode = 400;
-    return res.send(`${res.statusCode}: Bad Request`);
+    return res.send(`${res.statusCode}: Enter EmailId and Password`);
   } else {
     const valdiateEmail = emailLookup(email);
     if (valdiateEmail) {
       res.statusCode = 400;
-      return res.send(`${res.statusCode}: Bad Request`);
+      return res.send(`${res.statusCode}: EmailId is already registered`);
     }
   }
   const id = generateRandomString();
@@ -160,7 +165,7 @@ app.get('/login', (req, res) => {
   return res.render('user_login', templateVars);
 });
 
-//Check email and password stored users object and deal with user Login
+//Checking email and password stored in users object and handling user Login
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
   const valdiateEmail = emailLookup(email);
@@ -172,10 +177,10 @@ app.post('/login', (req, res) => {
       }
     }
     res.statusCode = 403;
-    return res.send(`${res.statusCode}: Forbidden`);
+    return res.send(`${res.statusCode}: Incorrect EmailId or Password`);
   } else {
     res.statusCode = 403;
-    return res.send(`${res.statusCode}: Forbidden`);
+    return res.send(`${res.statusCode}: EmailId doesnot exist`);
   }
 });
 
