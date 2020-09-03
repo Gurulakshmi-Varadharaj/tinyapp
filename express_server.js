@@ -45,10 +45,10 @@ const generateRandomString = () => {
 const emailLookup = (emailInput) => {
   for (let key in users) {
     if (emailInput === users[key]['email']) {
-      return false;
+      return true;
     }
   }
-  return true;
+  return false;
 };
 
 //Express will use EJS Template Engine
@@ -64,7 +64,7 @@ app.get('/urls', (req, res) => {
   return res.render('urls_index', templateVars);
 });
 
-//To show the form in browser
+//To show the create URL form in browser
 app.get("/urls/new", (req, res) => {
   const userIdCookie = req.cookies['user_id'];
   let templateVars = { user: users[userIdCookie] };
@@ -128,22 +128,10 @@ app.post('/urls/:shortURL', (req, res) => {
   return res.render('urls_show', templateVars);
 });
 
-//Setting cookies with user login form from _header.ejs
-/***app.post('/login', (req, res) => {
-  const userName = req.body.username;
-  res.cookie('username', userName);
-  return res.redirect('/urls');
-});***/
-
-//Clearing cookies with user logout form from _header.ejs
-/***app.post('/logout', (req, res) => {
-  res.clearCookie('user_id');
-  return res.redirect('/urls');
-});***/
-
 //User Registration page
 app.get('/register', (req, res) => {
-  return res.render('user_register');
+  let templateVars = { user: users };
+  return res.render('user_register', templateVars);
 });
 
 //POST endpoint for Registration page to store the user details in users object
@@ -154,8 +142,8 @@ app.post('/register', (req, res) => {
     res.statusCode = 400;
     return res.send(`${res.statusCode}: Bad Request`);
   } else {
-    const valdiateEamil = emailLookup(email);
-    if (!valdiateEamil) {
+    const valdiateEmail = emailLookup(email);
+    if (valdiateEmail) {
       res.statusCode = 400;
       return res.send(`${res.statusCode}: Bad Request`);
     }
@@ -168,7 +156,27 @@ app.post('/register', (req, res) => {
 
 //User Login Form
 app.get('/login', (req, res) => {
-  return res.render('user_login');
+  let templateVars = { user: users };
+  return res.render('user_login', templateVars);
+});
+
+//Check email and password stored users object and deal with user Login
+app.post('/login', (req, res) => {
+  const { email, password } = req.body;
+  const valdiateEmail = emailLookup(email);
+  if (valdiateEmail) {
+    for (let key in users) {
+      if (users[key]['email'] === email && users[key]['password'] === password) {
+        res.cookie('user_id', users[key]['id']);
+        return res.redirect('/urls');
+      }
+    }
+    res.statusCode = 403;
+    return res.send(`${res.statusCode}: Forbidden`);
+  } else {
+    res.statusCode = 403;
+    return res.send(`${res.statusCode}: Forbidden`);
+  }
 });
 
 app.post('/logout', (req, res) => {

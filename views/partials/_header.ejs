@@ -12,12 +12,12 @@
       </div>
     </div>
     <% if(user['id']) { %>
-    <h5>Logged in as <%= user['email']  %>!</h5>
+    <h5>Logged in as <%= user['email'] %>!</h5>
     <form action="/logout" method="POST">
       <button type="submit">Logout</button>
     </form>
     <% } else { %>
-    <a href="/login">Login</a>
+    <a href="/login">Login/</a>
     <a href="/register">Register</a>
     <% } %>
   </nav>
