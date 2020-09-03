@@ -99,7 +99,7 @@ app.get('/urls/:shortURL', (req, res) => {
     return res.render('urls_show', templateVars);
   } else {
     res.statusCode = 404;
-    return res.send('404: Page not found');
+    return res.send(`${res.statusCode}: Page not found`);
   }
 });
 
@@ -109,15 +109,19 @@ app.post('/urls/:shortURL/delete', (req, res) => {
   return res.redirect('/urls');
 });
 
-//Using POST instead of PUT method to redirect from index page to show page
+//Using POST to redirect from index page to show page
 app.post('/urls/:shortURL/edit', (req, res) => {
   let redirectTo = `/urls/${req.params.shortURL}`;
   return res.redirect(redirectTo);
 });
 
-//Using POST instead of PUT method to update the longURL
+//Using POST instead of PUT method to Edit the longURL
 app.post('/urls/:shortURL', (req, res) => {
   const longURL = req.body.longURL;
+  if (longURL === '') {
+    res.statusCode = 400;
+    return res.send(`${res.statusCode}: Bad Request`);
+  }
   const userIdCookie = req.cookies['user_id'];
   urlDatabase[req.params.shortURL] = longURL;
   let templateVars = { user: users[userIdCookie], shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
@@ -125,17 +129,17 @@ app.post('/urls/:shortURL', (req, res) => {
 });
 
 //Setting cookies with user login form from _header.ejs
-app.post('/login', (req, res) => {
+/***app.post('/login', (req, res) => {
   const userName = req.body.username;
   res.cookie('username', userName);
   return res.redirect('/urls');
-});
+});***/
 
 //Clearing cookies with user logout form from _header.ejs
-app.post('/logout', (req, res) => {
+/***app.post('/logout', (req, res) => {
   res.clearCookie('user_id');
   return res.redirect('/urls');
-});
+});***/
 
 //User Registration page
 app.get('/register', (req, res) => {
@@ -160,6 +164,16 @@ app.post('/register', (req, res) => {
   users[id] = { id, email, password };
   res.cookie('user_id', id);
   return res.redirect('/urls');
+});
+
+//User Login Form
+app.get('/login', (req, res) => {
+  return res.render('user_login');
+});
+
+app.post('/logout', (req, res) => {
+  res.clearCookie('user_id');
+  return res.redirect('/login');
 });
 
 //Server Connection to port
