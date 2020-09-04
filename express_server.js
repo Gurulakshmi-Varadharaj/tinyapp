@@ -8,12 +8,15 @@ const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-//Middleware - Cookie parser
-const cookieParser = require('cookie-parser');
-app.use(cookieParser());
-
 //Middleware - bcrypt for hashing password
 const bcrypt = require('bcrypt');
+
+//Middleware - cookie-seesion to encrypt the cookie
+const cookieSession = require('cookie-session');
+app.use(cookieSession({
+  name: 'session',
+  keys: ['key1']
+}));
 
 //GLOBAL VARIABLE
 let currentUser = '';
@@ -68,7 +71,7 @@ const getUserSpecificData = (userId) => {
   return userSpecificURL;
 };
 
-//Express will use EJS Template Engine
+//Express uses EJS Template Engine
 app.set('view engine', 'ejs');
 
 //Route for client-server interaction
@@ -76,7 +79,7 @@ app.set('view engine', 'ejs');
 
 //Root or Home page
 app.get('/urls', (req, res) => {
-  const userIdCookie = req.cookies['user_id'];
+  const userIdCookie = req.session.userId;
   if (userIdCookie !== undefined) {
     const urlsData = getUserSpecificData(currentUser);   //Get User Specific Data
     let templateVars = { user: users[userIdCookie], urls: urlsData };
@@ -88,7 +91,7 @@ app.get('/urls', (req, res) => {
 
 //To show the create URL form in browser
 app.get("/urls/new", (req, res) => {
-  const userIdCookie = req.cookies['user_id'];
+  const userIdCookie = req.session.userId;
   if (userIdCookie !== undefined) {
     let templateVars = { user: users[userIdCookie] };
     return res.render("urls_new", templateVars);
@@ -137,7 +140,7 @@ app.get('/urls/:shortURL', (req, res) => {
 
 //Using POST instead of DELETE method to delete a data from urlDatabase
 app.post('/urls/:shortURL/delete', (req, res) => {
-  const userIdCookie = req.cookies['user_id'];
+  const userIdCookie = req.session.userId;
   if (userIdCookie !== undefined) {
     const shortURL = `${req.params.shortURL}`;
     delete urlDatabase[shortURL];
@@ -147,7 +150,7 @@ app.post('/urls/:shortURL/delete', (req, res) => {
 
 //Using POST to redirect from index page to show page
 app.post('/urls/:shortURL/edit', (req, res) => {
-  const userIdCookie = req.cookies['user_id'];
+  const userIdCookie = req.session.userId;
   if (userIdCookie !== undefined) {
     let redirectTo = `/urls/${req.params.shortURL}`;
     return res.redirect(redirectTo);
@@ -161,7 +164,6 @@ app.post('/urls/:shortURL', (req, res) => {
     res.statusCode = 400;
     return res.send(`${res.statusCode}: Bad Request`);
   }
-  //const userIdCookie = req.cookies['user_id'];
   const shortURL = `${req.params.shortURL}`;
   urlDatabase[shortURL]['longURL'] = longURL;
   let templateVars = { user: users[currentUser], shortURL, longURL: urlDatabase[shortURL]['longURL'] };
@@ -170,7 +172,7 @@ app.post('/urls/:shortURL', (req, res) => {
 
 //User Registration page
 app.get('/register', (req, res) => {
-  res.clearCookie('user_id');
+  req.session = null;
   let templateVars = { user: users };
   return res.render('user_register', templateVars);
 });
@@ -192,9 +194,8 @@ app.post('/register', (req, res) => {
   const id = generateRandomString();
   const hashedPassword = bcrypt.hashSync(password, 10);
   users[id] = { id, email, hashedPassword };
-  console.log(users);
   currentUser = id;
-  res.cookie('user_id', currentUser);
+  req.session.userId = currentUser;
   return res.redirect('/urls');
 });
 
@@ -211,7 +212,7 @@ app.post('/login', (req, res) => {
   if (valdiateEmail) {
     for (let key in users) {
       if (users[key]['email'] === email && bcrypt.compareSync(password, users[key]['hashedPassword'])) {
-        res.cookie('user_id', users[key]['id']);
+        req.session.userId = users[key]['id'];
         return res.redirect('/urls');
       }
     }
@@ -225,7 +226,7 @@ app.post('/login', (req, res) => {
 
 //Logout handler - clearing cookies
 app.post('/logout', (req, res) => {
-  res.clearCookie('user_id');
+  req.session = null;
   return res.redirect('/login');
 });
 
