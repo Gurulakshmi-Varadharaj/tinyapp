@@ -3,6 +3,9 @@ const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
 
+//Refactor to test helper functions
+const { getUserByEmail } = require('./helper');
+
 //Middleware - Body Parser - to make Buffer data in request readable
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -48,16 +51,6 @@ const generateRandomString = () => {
     result += chars[Math.floor(Math.random() * chars.length)];
   }
   return result;
-};
-
-//Helper function to check email already exists in users DB
-const emailLookup = (emailInput) => {
-  for (let key in users) {
-    if (emailInput === users[key]['email']) {
-      return true;
-    }
-  }
-  return false;
 };
 
 //Helper function to get data specific to user
@@ -185,8 +178,8 @@ app.post('/register', (req, res) => {
     res.statusCode = 400;
     return res.send(`${res.statusCode}: Enter EmailId and Password`);
   } else {
-    const valdiateEmail = emailLookup(email);
-    if (valdiateEmail) {
+    const valdateEmail = getUserByEmail(email, users);
+    if (valdateEmail) {
       res.statusCode = 400;
       return res.send(`${res.statusCode}: EmailId is already registered`);
     }
@@ -208,7 +201,7 @@ app.get('/login', (req, res) => {
 //Checking email and password stored in users object and handling user Login
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
-  const valdiateEmail = emailLookup(email);
+  const valdiateEmail = getUserByEmail(email, users);
   if (valdiateEmail) {
     for (let key in users) {
       if (users[key]['email'] === email && bcrypt.compareSync(password, users[key]['hashedPassword'])) {
