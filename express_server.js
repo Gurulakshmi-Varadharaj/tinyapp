@@ -12,6 +12,9 @@ app.use(bodyParser.json());
 const cookieParser = require('cookie-parser');
 app.use(cookieParser());
 
+//Middleware - bcrypt for hashing password
+const bcrypt = require('bcrypt');
+
 //GLOBAL VARIABLE
 let currentUser = '';
 
@@ -20,12 +23,12 @@ let users = {
   "userRandomID": {
     id: "userRandomID",
     email: "user@example.com",
-    password: "purple-monkey-dinosaur"
+    hashedPassword: "purple-monkey-dinosaur"
   },
   "user2RandomID": {
     id: "user2RandomID",
     email: "user2@example.com",
-    password: "dishwasher-funk"
+    hashedPassword: "dishwasher-funk"
   }
 };
 
@@ -187,7 +190,9 @@ app.post('/register', (req, res) => {
     }
   }
   const id = generateRandomString();
-  users[id] = { id, email, password };
+  const hashedPassword = bcrypt.hashSync(password, 10);
+  users[id] = { id, email, hashedPassword };
+  console.log(users);
   currentUser = id;
   res.cookie('user_id', currentUser);
   return res.redirect('/urls');
@@ -205,7 +210,7 @@ app.post('/login', (req, res) => {
   const valdiateEmail = emailLookup(email);
   if (valdiateEmail) {
     for (let key in users) {
-      if (users[key]['email'] === email && users[key]['password'] === password) {
+      if (users[key]['email'] === email && bcrypt.compareSync(password, users[key]['hashedPassword'])) {
         res.cookie('user_id', users[key]['id']);
         return res.redirect('/urls');
       }
