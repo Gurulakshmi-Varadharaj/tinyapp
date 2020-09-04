@@ -12,6 +12,9 @@ app.use(bodyParser.json());
 const cookieParser = require('cookie-parser');
 app.use(cookieParser());
 
+//GLOBAL VARIABLE
+let currentUser = '';
+
 //Local Database - later use real DB
 let users = {
   "userRandomID": {
@@ -26,9 +29,9 @@ let users = {
   }
 };
 
-let urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+const urlDatabase = {
+  b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
+  i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
 };
 
 //Helper Function to generate random alphanumeric string
@@ -51,6 +54,17 @@ const emailLookup = (emailInput) => {
   return false;
 };
 
+//Helper function to get data specific to user
+const getUserSpecificData = (userId) => {
+  let userSpecificURL = {};
+  for (let urls in urlDatabase) {
+    if (urlDatabase[urls]['userID'] === userId) {
+      userSpecificURL[urls] = urlDatabase[urls]['longURL'];
+    }
+  }
+  return userSpecificURL;
+};
+
 //Express will use EJS Template Engine
 app.set('view engine', 'ejs');
 
@@ -60,15 +74,24 @@ app.set('view engine', 'ejs');
 //Root or Home page
 app.get('/urls', (req, res) => {
   const userIdCookie = req.cookies['user_id'];
-  let templateVars = { user: users[userIdCookie], urls: urlDatabase };
-  return res.render('urls_index', templateVars);
+  if (userIdCookie !== undefined) {
+    const urlsData = getUserSpecificData(currentUser);   //Get User Specific Data
+    let templateVars = { user: users[userIdCookie], urls: urlsData };
+    return res.render('urls_index', templateVars);
+  } else {
+    return res.redirect('/login');
+  }
 });
 
 //To show the create URL form in browser
 app.get("/urls/new", (req, res) => {
   const userIdCookie = req.cookies['user_id'];
-  let templateVars = { user: users[userIdCookie] };
-  return res.render("urls_new", templateVars);
+  if (userIdCookie !== undefined) {
+    let templateVars = { user: users[userIdCookie] };
+    return res.render("urls_new", templateVars);
+  } else {
+    return res.redirect('/login');
+  }
 });
 
 //After submit, the POST method is called to save the newURL to urlDatabase
@@ -76,7 +99,7 @@ app.post("/urls", (req, res) => {
   const longURL = req.body.longURL;
   if (longURL !== '') {
     const shortURL = generateRandomString();
-    urlDatabase[shortURL] = longURL;
+    urlDatabase[shortURL] = { longURL, userID: currentUser };
     const redirectTO = `/u/${shortURL}`;
     return res.redirect(redirectTO);         // Respond with redirection to /urls/:shortURL
   } else {
@@ -87,8 +110,9 @@ app.post("/urls", (req, res) => {
 
 //Redirect using shortURL to longURL page using /u/:shortURL
 app.get("/u/:shortURL", (req, res) => {
-  if (urlDatabase[req.params.shortURL]) {
-    const longURL = urlDatabase[req.params.shortURL];
+  const shortURL = `${req.params.shortURL}`;
+  if (urlDatabase[shortURL]) {
+    const longURL = urlDatabase[shortURL]['longURL'];
     return res.redirect(longURL);
   } else {
     res.statusCode = 404;
@@ -98,9 +122,9 @@ app.get("/u/:shortURL", (req, res) => {
 
 //Using Template Engine to pass data from frontend to backend and vice versa
 app.get('/urls/:shortURL', (req, res) => {
-  if (urlDatabase[req.params.shortURL]) {
-    const userIdCookie = req.cookies['user_id'];
-    let templateVars = { user: users[userIdCookie], shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  const shortURL = `${req.params.shortURL}`;
+  if (urlDatabase[shortURL]) {
+    let templateVars = { user: users[currentUser], shortURL, longURL: urlDatabase[shortURL]['longURL'] };
     return res.render('urls_show', templateVars);
   } else {
     res.statusCode = 404;
@@ -110,14 +134,21 @@ app.get('/urls/:shortURL', (req, res) => {
 
 //Using POST instead of DELETE method to delete a data from urlDatabase
 app.post('/urls/:shortURL/delete', (req, res) => {
-  delete urlDatabase[req.params.shortURL];
-  return res.redirect('/urls');
+  const userIdCookie = req.cookies['user_id'];
+  if (userIdCookie !== undefined) {
+    const shortURL = `${req.params.shortURL}`;
+    delete urlDatabase[shortURL];
+    return res.redirect('/urls');
+  }
 });
 
 //Using POST to redirect from index page to show page
 app.post('/urls/:shortURL/edit', (req, res) => {
-  let redirectTo = `/urls/${req.params.shortURL}`;
-  return res.redirect(redirectTo);
+  const userIdCookie = req.cookies['user_id'];
+  if (userIdCookie !== undefined) {
+    let redirectTo = `/urls/${req.params.shortURL}`;
+    return res.redirect(redirectTo);
+  }
 });
 
 //Using POST instead of PUT method to Edit the longURL
@@ -127,14 +158,16 @@ app.post('/urls/:shortURL', (req, res) => {
     res.statusCode = 400;
     return res.send(`${res.statusCode}: Bad Request`);
   }
-  const userIdCookie = req.cookies['user_id'];
-  urlDatabase[req.params.shortURL] = longURL;
-  let templateVars = { user: users[userIdCookie], shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  //const userIdCookie = req.cookies['user_id'];
+  const shortURL = `${req.params.shortURL}`;
+  urlDatabase[shortURL]['longURL'] = longURL;
+  let templateVars = { user: users[currentUser], shortURL, longURL: urlDatabase[shortURL]['longURL'] };
   return res.render('urls_show', templateVars);
 });
 
 //User Registration page
 app.get('/register', (req, res) => {
+  res.clearCookie('user_id');
   let templateVars = { user: users };
   return res.render('user_register', templateVars);
 });
@@ -155,7 +188,8 @@ app.post('/register', (req, res) => {
   }
   const id = generateRandomString();
   users[id] = { id, email, password };
-  res.cookie('user_id', id);
+  currentUser = id;
+  res.cookie('user_id', currentUser);
   return res.redirect('/urls');
 });
 
@@ -184,6 +218,7 @@ app.post('/login', (req, res) => {
   }
 });
 
+//Logout handler - clearing cookies
 app.post('/logout', (req, res) => {
   res.clearCookie('user_id');
   return res.redirect('/login');
