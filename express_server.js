@@ -21,7 +21,7 @@ app.use(cookieSession({
   keys: ['key1']
 }));
 
-//GLOBAL VARIABLE
+//GLOBAL VARIABLES
 let currentUser = '';
 
 //Local Database - later use real DB
@@ -69,6 +69,10 @@ app.set('view engine', 'ejs');
 
 //Route for client-server interaction
 //Using Template Engine to pass data from backend to frontend
+
+app.get('/', (req, res) => {
+  return res.redirect('/login');
+});
 
 //Root or Home page
 app.get('/urls', (req, res) => {
