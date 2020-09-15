@@ -4,7 +4,7 @@ const app = express();
 const PORT = 8080; // default port 8080
 
 //Refactor to test helper functions
-const { getUserByEmail } = require('./helper');
+const { getUserByEmail, generateRandomString, getUserSpecificData } = require('./helper');
 
 //Middleware - Body Parser - to make Buffer data in request readable
 const bodyParser = require("body-parser");
@@ -20,9 +20,6 @@ app.use(cookieSession({
   name: 'session',
   keys: ['key1']
 }));
-
-//GLOBAL VARIABLES
-let currentUser = '';
 
 //Local Database - later use real DB
 let users = {
@@ -43,27 +40,7 @@ const urlDatabase = {
   i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
 };
 
-//Helper Function to generate random alphanumeric string
-const generateRandomString = () => {
-  let result = '';
-  const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  for (let i = 6; i > 0; --i) {
-    result += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return result;
-};
-
-//Helper function to get data specific to user
-const getUserSpecificData = (userId) => {
-  let userSpecificURL = {};
-  //console.log(urlDatabase);
-  for (let urls in urlDatabase) {
-    if (urlDatabase[urls]['userID'] === userId) {
-      userSpecificURL[urls] = urlDatabase[urls]['longURL'];
-    }
-  }
-  return userSpecificURL;
-};
+let currentUser = '';
 
 //Express uses EJS Template Engine
 app.set('view engine', 'ejs');
@@ -79,7 +56,7 @@ app.get('/', (req, res) => {
 app.get('/urls', (req, res) => {
   const userIdCookie = req.session.userId;
   if (userIdCookie !== undefined) {
-    const urlsData = getUserSpecificData(currentUser);   //Get User Specific Data
+    const urlsData = getUserSpecificData(currentUser, urlDatabase);   //Get User Specific Data
     let templateVars = { user: users[userIdCookie], urls: urlsData };
     return res.render('urls_index', templateVars);
   } else {
@@ -104,7 +81,6 @@ app.post("/urls", (req, res) => {
   if (longURL !== '') {
     const shortURL = generateRandomString();
     urlDatabase[shortURL] = { longURL, userID: currentUser };
-    //const redirectTO = `/u/${shortURL}`;
     const redirectTO = `/urls/${shortURL}`;
     return res.redirect(redirectTO);         // Respond with redirection to /urls/:shortURL
   } else {
