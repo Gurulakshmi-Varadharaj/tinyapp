@@ -56,6 +56,7 @@ const generateRandomString = () => {
 //Helper function to get data specific to user
 const getUserSpecificData = (userId) => {
   let userSpecificURL = {};
+  //console.log(urlDatabase);
   for (let urls in urlDatabase) {
     if (urlDatabase[urls]['userID'] === userId) {
       userSpecificURL[urls] = urlDatabase[urls]['longURL'];
@@ -103,7 +104,8 @@ app.post("/urls", (req, res) => {
   if (longURL !== '') {
     const shortURL = generateRandomString();
     urlDatabase[shortURL] = { longURL, userID: currentUser };
-    const redirectTO = `/u/${shortURL}`;
+    //const redirectTO = `/u/${shortURL}`;
+    const redirectTO = `/urls/${shortURL}`;
     return res.redirect(redirectTO);         // Respond with redirection to /urls/:shortURL
   } else {
     res.statusCode = 404;
@@ -210,6 +212,7 @@ app.post('/login', (req, res) => {
     for (let key in users) {
       if (users[key]['email'] === email && bcrypt.compareSync(password, users[key]['hashedPassword'])) {
         req.session.userId = users[key]['id'];
+        currentUser = users[key]['id'];
         return res.redirect('/urls');
       }
     }
