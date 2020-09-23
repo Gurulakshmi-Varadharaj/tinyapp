@@ -104,7 +104,7 @@ app.get("/u/:shortURL", (req, res) => {
 //Using Template Engine to pass data from frontend to backend and vice versa
 app.get('/urls/:shortURL', (req, res) => {
   const shortURL = `${req.params.shortURL}`;
-  if (urlDatabase[shortURL]) {
+  if (urlDatabase[shortURL] && urlDatabase[shortURL]['userID'] === currentUser) {
     let templateVars = { user: users[currentUser], shortURL, longURL: urlDatabase[shortURL]['longURL'] };
     return res.render('urls_show', templateVars);
   } else {
